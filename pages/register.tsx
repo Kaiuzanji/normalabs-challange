@@ -1,54 +1,47 @@
 import type { NextPage } from 'next'
-import { getSession } from 'next-auth/react'
-import { ChangeEvent, FormEvent, useState, useContext } from 'react'
+import { FormEvent, useState, useContext } from 'react'
 import { Sun, Moon } from 'phosphor-react'
-import SignIn from './components/Forms/Signin'
 import DarkModeContext from './../contexts/darkTheme/context'
+import SignUp from './components/Forms/Signup'
+import axios from 'axios'
+import { PrismaUserRepository } from './../repositories/prisma/prismaUserRepository'
+import { CreateUserUseCase } from './../use-cases/createUserUseCase'
 
-type SignInFormValuesType = {
+type FormFileValue = {
+  filename: string,
+  type: string,
+  size: number
+  dataUrl: string | null
+  preview: string
+}
+
+type SignUpFormValueType = {
+  name: string,
+  image: FormFileValue | null,
   email: string,
   password: string
 }
 
-export async function getServerSideProps(context){
-  const session = await getSession(context);
-
-  if(session){
-    return {
-      redirect: {
-        destination: "/badge",
-        permanent: false
-      }
-    }
-  }
-
-  return {
-    props: {
-      session
-    }
-  }
-}
-
-const Index: NextPage = () => {
+const Register: NextPage = () => {
   const { isDarkMode, setIsDarkMode} = useContext(DarkModeContext)
 
-  const [signInFormValues, setSignInFormValues] = useState<SignInFormValuesType>({
-    email: '',
-    password: ''
+  const [signUpFormValues, setSignUpFormValues] = useState<SignUpFormValueType>({
+    name: "",
+    image: null,
+    email: "",
+    password: ""
   })
 
-  const handleChangeFormValue = (event: ChangeEvent<HTMLInputElement>) => {
-    setSignInFormValues( currentValues => ({
-      ...currentValues,
-      [event.target.name]: event.target.value
-    }))
+  const handleSubmitSignUpForm = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    await axios.post('/api/user/create', {
+      name: signUpFormValues.name,
+      email: signUpFormValues.email,
+      image: signUpFormValues.image.dataUrl,
+      password: signUpFormValues.password,
+    })
   }
 
-  const handleSubmitSignInForm = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    console.log(signInFormValues)
-  }
-  
   return (
     <>
       <header>
@@ -58,7 +51,7 @@ const Index: NextPage = () => {
       </header>
       <div className='h-screen flex items-center justify-center py-4 px-4 sm:px-6 lg:px-8'>
         <div className='font-medium max-w-md w-full space-y-1 rounded-md bg-zinc-100 dark:bg-zinc-700 shadow-2xl p-4 z-10'>
-          <SignIn signInFormValues={signInFormValues} handleChangeFormValue={handleChangeFormValue} handleSubmitSignInForm={handleSubmitSignInForm} />
+          <SignUp signUpFormValues={signUpFormValues} setSignUpFormValues={setSignUpFormValues} handleSubmitSignUpForm={handleSubmitSignUpForm} />
         </div>
       </div>
       <footer className='w-full absolute bottom-0'>
@@ -68,4 +61,4 @@ const Index: NextPage = () => {
   )
 }
 
-export default Index
+export default Register
